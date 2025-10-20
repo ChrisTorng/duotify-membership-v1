@@ -1,13 +1,13 @@
 <!--
 Sync Impact Report:
-- Version: NEW → 1.0.0 (Initial constitution creation)
-- Principles Added: 7 core principles established
-- Sections Added: Code Quality Standards, Performance Requirements, Quality Gates & Reviews, Governance
+- Version: 1.0.0 → 1.1.0 (MINOR: New language requirement principle added)
+- Principles Added: VIII. Language & Localization (zh-TW requirement)
+- Sections Modified: Documentation Requirements updated for zh-TW
 - Templates Status:
   ✅ plan-template.md - Reviewed for alignment
-  ✅ spec-template.md - Reviewed for alignment
+  ✅ spec-template.md - Reviewed for alignment  
   ✅ tasks-template.md - Reviewed for alignment
-- Follow-up: None
+- Follow-up: Update existing specs/plans to zh-TW (tracked as technical debt)
 -->
 
 # Duotify Membership Constitution
@@ -113,6 +113,22 @@ in legal/financial consequences. Prevention is orders of magnitude cheaper than 
 
 **Rationale**: Simplicity accelerates development, reduces bugs, and lowers onboarding 
 time. Complexity should be justified by concrete requirements, not speculation.
+
+### VIII. Language & Localization (NON-NEGOTIABLE)
+
+**All user-facing documentation and specifications MUST be in Traditional Chinese:**
+- Feature specifications (spec.md) written in Traditional Chinese (zh-TW)
+- Implementation plans (plan.md) written in Traditional Chinese (zh-TW)
+- User documentation and guides written in Traditional Chinese (zh-TW)
+- README files for user-facing features in Traditional Chinese (zh-TW)
+- API documentation with Traditional Chinese descriptions
+- Error messages and user-facing text in Traditional Chinese
+- Code comments MAY remain in English for technical clarity
+- Commit messages MAY remain in English for version control compatibility
+
+**Rationale**: Traditional Chinese as the primary language ensures consistency for 
+the target user base, reduces miscommunication, and improves user experience for 
+Chinese-speaking stakeholders and end users.
 
 ## Code Quality Standards
 
