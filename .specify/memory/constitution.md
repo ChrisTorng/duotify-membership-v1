@@ -139,11 +139,13 @@ Chinese-speaking stakeholders and end users.
 - IDE/editor configurations shared across team
 
 ### Documentation Requirements
-- README with setup, development, and deployment instructions
-- API documentation auto-generated from code (OpenAPI/Swagger)
-- Inline documentation for complex algorithms
-- Architecture diagrams for system design
-- Changelog maintained following Keep a Changelog format
+- README with setup, development, and deployment instructions (Traditional Chinese for user-facing, English acceptable for technical setup)
+- Feature specifications in Traditional Chinese (zh-TW) per Principle VIII
+- Implementation plans in Traditional Chinese (zh-TW) per Principle VIII
+- API documentation auto-generated from code (OpenAPI/Swagger) with Traditional Chinese descriptions
+- Inline documentation for complex algorithms (English acceptable)
+- Architecture diagrams for system design with Traditional Chinese labels
+- Changelog maintained following Keep a Changelog format (Traditional Chinese)
 
 ### Version Control Practices
 - Meaningful commit messages following Conventional Commits
@@ -228,4 +230,4 @@ with documented rationale and obtain approval.
 - Feedback loops from production incidents inform updates
 - Team members empowered to propose improvements
 
-**Version**: 1.0.0 | **Ratified**: 2025-10-20 | **Last Amended**: 2025-10-20
+**Version**: 1.1.0 | **Ratified**: 2025-10-20 | **Last Amended**: 2025-10-20
