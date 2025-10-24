@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Serilog.Enrichers;
 
-var builder = WebApplicationBuilder.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
@@ -49,6 +49,7 @@ builder.Services.AddScoped<IVerificationCodeRepository, VerificationCodeReposito
 builder.Services.AddScoped<IMemberService, MemberService>();
 builder.Services.AddScoped<IVerificationCodeService, VerificationCodeService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
 
 builder.Services.AddCors(options =>
 {
@@ -60,7 +61,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-var app = builder.CreateSlimBuilder(args).Build();
+var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
@@ -68,6 +69,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseMiddleware<RateLimitingMiddleware>();
 app.UseMiddleware<ErrorHandlingMiddleware>();
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
@@ -86,3 +88,5 @@ finally
 {
     Log.CloseAndFlush();
 }
+
+public partial class Program { }

@@ -33,7 +33,7 @@ public class MemberService : IMemberService
             throw new InvalidOperationException("NATIONAL_ID_ALREADY_EXISTS");
         }
 
-        var passwordHash = BCrypt.HashPassword(request.Password, workFactor: 12);
+        var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password, workFactor: 12);
 
         var member = new Member
         {
@@ -64,7 +64,7 @@ public class MemberService : IMemberService
         var member = await _memberRepository.GetByEmailAsync(request.EmailOrNationalId) ??
                      await _memberRepository.GetByNationalIdAsync(request.EmailOrNationalId);
 
-        if (member == null || !BCrypt.Verify(request.Password, member.PasswordHash))
+        if (member == null || !BCrypt.Net.BCrypt.Verify(request.Password, member.PasswordHash))
         {
             _logger.LogWarning("Login attempt failed for: {Identifier}", request.EmailOrNationalId);
             throw new InvalidOperationException("INVALID_CREDENTIALS");
