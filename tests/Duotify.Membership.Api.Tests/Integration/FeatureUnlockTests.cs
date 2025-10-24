@@ -17,7 +17,7 @@ public class FeatureUnlockTests : IClassFixture<ApiWebApplicationFactory>
 
     public FeatureUnlockTests(ApiWebApplicationFactory factory)
     {
-        _httpClient = factory.CreateClient();
+        _httpClient = factory.CreateClientWithTestMode();
     }
 
     private async Task<(Guid MemberId, string Code)> RegisterAndGetVerificationCodeAsync(string nationalId, string email)

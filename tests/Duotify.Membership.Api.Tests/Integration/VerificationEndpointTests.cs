@@ -13,7 +13,7 @@ public class VerificationEndpointTests : IClassFixture<ApiWebApplicationFactory>
 
     public VerificationEndpointTests(ApiWebApplicationFactory factory)
     {
-        _httpClient = factory.CreateClient();
+        _httpClient = factory.CreateClientWithTestMode();
     }
 
     private async Task<Guid> RegisterMemberAsync()

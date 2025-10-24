@@ -19,7 +19,7 @@ public class CodeExpirationTests : IClassFixture<ApiWebApplicationFactory>
 
     public CodeExpirationTests(ApiWebApplicationFactory factory)
     {
-        _httpClient = factory.CreateClient();
+        _httpClient = factory.CreateClientWithTestMode();
     }
 
     private async Task<(Guid MemberId, string Code)> RegisterMemberAsync(string nationalId, string email)

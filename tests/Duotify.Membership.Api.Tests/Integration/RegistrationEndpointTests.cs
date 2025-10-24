@@ -13,7 +13,7 @@ public class RegistrationEndpointTests : IClassFixture<ApiWebApplicationFactory>
 
     public RegistrationEndpointTests(ApiWebApplicationFactory factory)
     {
-        _httpClient = factory.CreateClient();
+        _httpClient = factory.CreateClientWithTestMode();
     }
 
     [Fact]

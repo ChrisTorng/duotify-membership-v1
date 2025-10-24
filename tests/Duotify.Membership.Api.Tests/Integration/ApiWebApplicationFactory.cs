@@ -1,6 +1,7 @@
 using Duotify.Membership.Api.Data;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -35,5 +36,12 @@ public class ApiWebApplicationFactory : WebApplicationFactory<Program>
                 dbContext.Database.EnsureCreated();
             }
         });
+    }
+
+    public HttpClient CreateClientWithTestMode()
+    {
+        var client = CreateClient();
+        client.DefaultRequestHeaders.Add("X-Test-Mode", "true");
+        return client;
     }
 }

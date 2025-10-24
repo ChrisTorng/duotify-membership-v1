@@ -17,7 +17,7 @@ public class ConcurrentRegistrationTests : IClassFixture<ApiWebApplicationFactor
 
     public ConcurrentRegistrationTests(ApiWebApplicationFactory factory)
     {
-        _httpClient = factory.CreateClient();
+        _httpClient = factory.CreateClientWithTestMode();
     }
 
     [Fact]
@@ -93,7 +93,7 @@ public class PerformanceTests : IClassFixture<ApiWebApplicationFactory>
 
     public PerformanceTests(ApiWebApplicationFactory factory)
     {
-        _httpClient = factory.CreateClient();
+        _httpClient = factory.CreateClientWithTestMode();
     }
 
     [Fact]

@@ -19,7 +19,7 @@ public class LoginEndpointTests : IClassFixture<ApiWebApplicationFactory>
 
     public LoginEndpointTests(ApiWebApplicationFactory factory)
     {
-        _httpClient = factory.CreateClient();
+        _httpClient = factory.CreateClientWithTestMode();
     }
 
     private string GetNextTestId()

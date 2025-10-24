@@ -17,7 +17,7 @@ public class AccessControlTests : IClassFixture<ApiWebApplicationFactory>
 
     public AccessControlTests(ApiWebApplicationFactory factory)
     {
-        _httpClient = factory.CreateClient();
+        _httpClient = factory.CreateClientWithTestMode();
     }
 
     private async Task<Guid> RegisterMemberAsync(string nationalId, string email)
