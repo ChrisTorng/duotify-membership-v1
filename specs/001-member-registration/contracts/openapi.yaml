@@ -1,0 +1,474 @@
+openapi: 3.0.3
+info:
+  title: Duotify Membership API - 會員註冊流程
+  description: |
+    Duotify 會員管理系統 REST API - 會員註冊與 E-Mail 驗證功能
+
+    ## 功能概述
+    - 會員註冊 (身分證字號、姓名、E-Mail、密碼)
+    - E-Mail 驗證碼發送
+    - 驗證碼驗證
+    - 重新發送驗證碼
+
+    ## 認證機制
+    本版本 API 暫不實作認證機制 (未來將實作 JWT Bearer Token)
+
+    ## 錯誤處理
+    所有錯誤回應均遵循統一格式,包含錯誤碼與繁體中文錯誤訊息。
+
+  version: 1.0.0
+  contact:
+    name: Duotify Development Team
+    email: dev@duotify.com
+
+servers:
+  - url: https://api.duotify.com/v1
+    description: 正式環境
+  - url: https://api-staging.duotify.com/v1
+    description: 測試環境
+  - url: http://localhost:5000/v1
+    description: 本地開發環境
+
+tags:
+  - name: Members
+    description: 會員管理相關端點
+
+paths:
+  /members/register:
+    post:
+      tags:
+        - Members
+      summary: 會員註冊
+      description: |
+        建立新會員帳號並發送 E-Mail 驗證碼。
+        
+        **業務規則:**
+        - 身分證字號必須唯一,不可重複註冊
+        - 密碼必須符合強度要求 (8-20 碼,包含英文大小寫與數字)
+        - 註冊成功後自動發送驗證碼至指定 E-Mail
+        - 驗證碼有效期限為 5 分鐘
+        
+        **限制:**
+        - 相同身分證字號無法重複註冊 (回傳 409 Conflict)
+        - E-Mail 發送失敗會回傳 500 錯誤,需使用「重新發送驗證碼」功能
+      operationId: registerMember
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            examples:
+              valid:
+                summary: 有效的註冊請求
+                value:
+                  nationalId: "A123456789"
+                  name: "王小明"
+                  email: "wang@example.com"
+                  password: "MyPass123"
+      responses:
+        '201':
+          description: 註冊成功,驗證碼已發送
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+              examples:
+                success:
+                  summary: 註冊成功
+                  value:
+                    success: true
+                    data:
+                      memberId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                      email: "wang@example.com"
+                      message: "註冊成功!驗證碼已發送至您的電子郵件。"
+        '400':
+          description: 請求驗證失敗
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidNationalId:
+                  summary: 身分證字號格式錯誤
+                  value:
+                    success: false
+                    errorCode: "INVALID_NATIONAL_ID"
+                    errorMessage: "身分證字號格式錯誤"
+                    errors:
+                      nationalId: ["身分證字號格式必須為 1 碼英文 + 9 碼數字"]
+                invalidPassword:
+                  summary: 密碼不符合規則
+                  value:
+                    success: false
+                    errorCode: "INVALID_PASSWORD"
+                    errorMessage: "密碼不符合強度要求"
+                    errors:
+                      password: ["密碼必須為 8-20 碼,且包含至少一個英文大寫、小寫與數字"]
+        '409':
+          description: 身分證字號已被註冊
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                conflict:
+                  summary: 重複註冊
+                  value:
+                    success: false
+                    errorCode: "NATIONAL_ID_EXISTS"
+                    errorMessage: "此身分證字號已被註冊"
+        '500':
+          description: 伺服器錯誤 (例如 E-Mail 發送失敗)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                emailFailure:
+                  summary: E-Mail 發送失敗
+                  value:
+                    success: false
+                    errorCode: "EMAIL_SEND_FAILED"
+                    errorMessage: "驗證碼發送失敗,請稍後再試"
+
+  /members/{memberId}/verify:
+    post:
+      tags:
+        - Members
+      summary: 驗證 E-Mail 驗證碼
+      description: |
+        驗證使用者輸入的 6 位數驗證碼。
+        
+        **業務規則:**
+        - 驗證碼必須在 5 分鐘內使用
+        - 每個驗證碼最多允許 3 次錯誤嘗試
+        - 驗證成功後,會員帳號的 `IsEmailVerified` 設定為 `true`
+        - 驗證碼一旦使用即失效,無法重複使用
+        
+        **限制:**
+        - 驗證碼過期後回傳 400 錯誤,需重新發送
+        - 錯誤次數達到 3 次後驗證碼失效,需重新發送
+      operationId: verifyEmail
+      parameters:
+        - name: memberId
+          in: path
+          required: true
+          description: 會員 ID (UUID 格式)
+          schema:
+            type: string
+            format: uuid
+          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyCodeRequest'
+            examples:
+              valid:
+                summary: 有效的驗證請求
+                value:
+                  code: "123456"
+      responses:
+        '200':
+          description: 驗證成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyCodeResponse'
+              examples:
+                success:
+                  summary: 驗證成功
+                  value:
+                    success: true
+                    data:
+                      message: "E-Mail 驗證成功!您的帳號已完全啟用。"
+                      isEmailVerified: true
+        '400':
+          description: 驗證失敗 (驗證碼錯誤、過期或失效)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidCode:
+                  summary: 驗證碼錯誤
+                  value:
+                    success: false
+                    errorCode: "INVALID_CODE"
+                    errorMessage: "驗證碼錯誤,請重新輸入"
+                    data:
+                      remainingAttempts: 2
+                expired:
+                  summary: 驗證碼已過期
+                  value:
+                    success: false
+                    errorCode: "CODE_EXPIRED"
+                    errorMessage: "驗證碼已過期,請重新發送"
+                tooManyAttempts:
+                  summary: 錯誤次數過多
+                  value:
+                    success: false
+                    errorCode: "TOO_MANY_ATTEMPTS"
+                    errorMessage: "驗證碼錯誤次數已達上限,請重新發送"
+        '404':
+          description: 會員不存在或驗證碼不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                notFound:
+                  summary: 會員或驗證碼不存在
+                  value:
+                    success: false
+                    errorCode: "MEMBER_NOT_FOUND"
+                    errorMessage: "會員不存在或驗證碼無效"
+
+  /members/{memberId}/verification-code/resend:
+    post:
+      tags:
+        - Members
+      summary: 重新發送驗證碼
+      description: |
+        產生新的 E-Mail 驗證碼並發送至會員的電子郵件。
+        
+        **使用情境:**
+        - 驗證碼過期 (超過 5 分鐘)
+        - 驗證碼錯誤次數達到上限 (3 次)
+        - 使用者未收到 E-Mail
+        
+        **業務規則:**
+        - 僅限未驗證的會員使用此功能
+        - 產生新的 6 位數驗證碼,有效期限 5 分鐘
+        - 舊的驗證碼仍保留但會自動過期
+        - 限流: 同一會員 1 分鐘內最多發送 3 次
+      operationId: resendVerificationCode
+      parameters:
+        - name: memberId
+          in: path
+          required: true
+          description: 會員 ID (UUID 格式)
+          schema:
+            type: string
+            format: uuid
+          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+      responses:
+        '200':
+          description: 驗證碼重新發送成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResendCodeResponse'
+              examples:
+                success:
+                  summary: 重新發送成功
+                  value:
+                    success: true
+                    data:
+                      message: "驗證碼已重新發送至您的電子郵件。"
+                      email: "wang@example.com"
+        '400':
+          description: 請求無效 (會員已驗證或超過發送頻率限制)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                alreadyVerified:
+                  summary: 會員已驗證
+                  value:
+                    success: false
+                    errorCode: "ALREADY_VERIFIED"
+                    errorMessage: "您的帳號已完成驗證,無需重新發送"
+                rateLimitExceeded:
+                  summary: 超過發送頻率限制
+                  value:
+                    success: false
+                    errorCode: "RATE_LIMIT_EXCEEDED"
+                    errorMessage: "發送過於頻繁,請稍後再試"
+                    data:
+                      retryAfterSeconds: 45
+        '404':
+          description: 會員不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                notFound:
+                  summary: 會員不存在
+                  value:
+                    success: false
+                    errorCode: "MEMBER_NOT_FOUND"
+                    errorMessage: "會員不存在"
+        '500':
+          description: E-Mail 發送失敗
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                emailFailure:
+                  summary: E-Mail 發送失敗
+                  value:
+                    success: false
+                    errorCode: "EMAIL_SEND_FAILED"
+                    errorMessage: "驗證碼發送失敗,請稍後再試"
+
+components:
+  schemas:
+    RegisterRequest:
+      type: object
+      required:
+        - nationalId
+        - name
+        - email
+        - password
+      properties:
+        nationalId:
+          type: string
+          minLength: 10
+          maxLength: 10
+          pattern: '^[A-Z][12]\d{8}$'
+          description: 台灣身分證字號 (1 碼英文 + 9 碼數字)
+          example: "A123456789"
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: 會員姓名
+          example: "王小明"
+        email:
+          type: string
+          format: email
+          maxLength: 254
+          description: 電子郵件地址
+          example: "wang@example.com"
+        password:
+          type: string
+          minLength: 8
+          maxLength: 20
+          pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$'
+          description: 密碼 (8-20 碼,包含至少 1 個英文大寫、1 個小寫、1 個數字)
+          example: "MyPass123"
+
+    RegisterResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: 請求是否成功
+          example: true
+        data:
+          type: object
+          properties:
+            memberId:
+              type: string
+              format: uuid
+              description: 會員 ID
+              example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+            email:
+              type: string
+              format: email
+              description: 會員電子郵件
+              example: "wang@example.com"
+            message:
+              type: string
+              description: 成功訊息
+              example: "註冊成功!驗證碼已發送至您的電子郵件。"
+
+    VerifyCodeRequest:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          minLength: 6
+          maxLength: 6
+          pattern: '^\d{6}$'
+          description: 6 位數驗證碼
+          example: "123456"
+
+    VerifyCodeResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: 請求是否成功
+          example: true
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              description: 成功訊息
+              example: "E-Mail 驗證成功!您的帳號已完全啟用。"
+            isEmailVerified:
+              type: boolean
+              description: E-Mail 驗證狀態
+              example: true
+
+    ResendCodeResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: 請求是否成功
+          example: true
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              description: 成功訊息
+              example: "驗證碼已重新發送至您的電子郵件。"
+            email:
+              type: string
+              format: email
+              description: 會員電子郵件
+              example: "wang@example.com"
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: 請求是否成功
+          example: false
+        errorCode:
+          type: string
+          description: |
+            錯誤代碼:
+            - `INVALID_NATIONAL_ID`: 身分證字號格式錯誤
+            - `INVALID_PASSWORD`: 密碼不符合強度要求
+            - `NATIONAL_ID_EXISTS`: 身分證字號已被註冊
+            - `EMAIL_SEND_FAILED`: E-Mail 發送失敗
+            - `INVALID_CODE`: 驗證碼錯誤
+            - `CODE_EXPIRED`: 驗證碼已過期
+            - `TOO_MANY_ATTEMPTS`: 驗證碼錯誤次數過多
+            - `MEMBER_NOT_FOUND`: 會員不存在
+            - `ALREADY_VERIFIED`: 會員已完成驗證
+            - `RATE_LIMIT_EXCEEDED`: 超過發送頻率限制
+          example: "INVALID_NATIONAL_ID"
+        errorMessage:
+          type: string
+          description: 繁體中文錯誤訊息
+          example: "身分證字號格式錯誤"
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          description: 欄位驗證錯誤詳情 (選填)
+          example:
+            nationalId: ["身分證字號格式必須為 1 碼英文 + 9 碼數字"]
+            password: ["密碼長度必須為 8-20 碼"]
+        data:
+          type: object
+          description: 額外錯誤資訊 (選填)
+          example:
+            remainingAttempts: 2
