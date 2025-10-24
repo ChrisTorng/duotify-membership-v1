@@ -3,11 +3,14 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Xunit;
 
 namespace Duotify.Membership.Api.Tests.Integration;
 
 public class ApiWebApplicationFactory : WebApplicationFactory<Program>
 {
+    private readonly string _dbName = $"TestDb_{Guid.NewGuid()}";
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.ConfigureServices(services =>
@@ -22,7 +25,7 @@ public class ApiWebApplicationFactory : WebApplicationFactory<Program>
 
             services.AddDbContext<MembershipDbContext>(options =>
             {
-                options.UseInMemoryDatabase("TestDb");
+                options.UseInMemoryDatabase(_dbName);
             });
 
             var sp = services.BuildServiceProvider();

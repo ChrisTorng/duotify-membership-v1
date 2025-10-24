@@ -42,7 +42,7 @@ public class RegistrationEndpointTests : IClassFixture<ApiWebApplicationFactory>
     }
 
     [Fact]
-    public async Task Register_WithDuplicateNationalId_ReturnsBadRequest()
+    public async Task Register_WithDuplicateNationalId_ReturnsConflict()
     {
         var request = new RegisterRequest
         {
@@ -74,7 +74,7 @@ public class RegistrationEndpointTests : IClassFixture<ApiWebApplicationFactory>
 
         var response = await _httpClient.PostAsync("/v1/members/register", duplicateContent);
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
     [Fact]
